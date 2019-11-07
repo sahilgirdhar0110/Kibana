@@ -1,0 +1,44 @@
+version: '2'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.4
+    volumes:
+     - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      ELASTIC_PASSWORD: youpassword
+    networks:
+     - elk
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:6.5.4
+    command: filebeat -e -strict.perms=false
+#    #volumnes mount depend on you OS ( Windows or Linux )
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/sample_log:/usr/share/filebeat/logs
+      - ./filebeat/marketing:/usr/share/filebeat/logs/marketing
+    networks:
+      - elk
+    links:
+       - elasticsearch
+       - kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.5.4
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: youpassword
+    ports:
+      - 5601:5601
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch
+networks:
+  elk:
+    driver: bridge
